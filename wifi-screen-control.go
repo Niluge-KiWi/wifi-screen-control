@@ -1,15 +1,16 @@
 package main
 
-import "fmt"
-import "time"
-import "os/exec"
-import "log"
-import "strings"
-import "os"
-import "os/signal"
-import "syscall"
-
-const PollingTime = 1 // in seconds
+import (
+	"fmt"
+	"github.com/urfave/cli"
+	"log"
+	"os"
+	"os/exec"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+)
 
 func IsThereAnyBodyOutThere(device string) bool {
 	out, err := exec.Command("iw", "dev", device, "station", "dump").Output()
@@ -34,10 +35,7 @@ func SwitchMonitor(on bool) {
 	}
 }
 
-func main() {
-	device := os.Args[1]
-	fmt.Printf("Checking wifi AP (device %v) for connected stations, controlling monitor on/off state.\n", device)
-
+func Loop(device string, pollingInterval time.Duration) {
 	// first, make sure the monitor is on on exit
 	defer SwitchMonitor(true)
 
@@ -51,9 +49,7 @@ func main() {
 	SwitchMonitor(previousDevicePresent)
 
 	for {
-		fmt.Print("Just checking... ")
 		devicePresent := IsThereAnyBodyOutThere(device)
-		fmt.Printf("%v\n", devicePresent)
 
 		if devicePresent != previousDevicePresent {
 			SwitchMonitor(devicePresent)
@@ -65,7 +61,42 @@ func main() {
 		case <-quit:
 			fmt.Println("\nReceived an interrupt, stopping...")
 			return
-		case <-time.After(PollingTime * time.Second):
+		case <-time.After(pollingInterval):
 		}
+	}
+}
+
+func main() {
+	app := cli.NewApp()
+	app.Name = "wifi-screen-control"
+	app.Usage = "Checking wifi AP for connected stations, controlling monitor on/off state."
+
+	app.Commands = []cli.Command{
+		{
+			Name:      "watch",
+			Aliases:   []string{"w"},
+			Usage:     "watch wifi AP for stations to connect",
+			ArgsUsage: "DEVICE",
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "interval, n",
+					Value: 10,
+					Usage: "Polling interval for the wifi status, in seconds",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				device := c.Args().Get(0)
+				pollingInterval := time.Duration(c.Int("interval")) * time.Second
+				fmt.Printf("Checking wifi AP device %v every %v\n", device, pollingInterval)
+
+				Loop(device, pollingInterval)
+				return nil
+			},
+		},
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
