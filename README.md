@@ -1,5 +1,12 @@
 Checking wifi AP for connected stations, controlling monitor on/off state.
 
+# Build
+Requires go >= 1.11
+
+```
+go build
+```
+
 # Usage
 ```
 $ ./wifi-screen-control
@@ -35,4 +42,13 @@ OPTIONS:
 Example
 ```
 ./wifi-screen-control watch wlp0s29f7u2 --interval 1
+```
+
+# Systemd Setup
+```
+sudo cp wifi-screen-control /usr/local/bin/
+sudo cp wifi-screen-control@.service /etc/systemd/user/
+
+systemctl --user enable wifi-screen-control@wlp0s29f7u2
+systemctl --user start wifi-screen-control@wlp0s29f7u2
 ```

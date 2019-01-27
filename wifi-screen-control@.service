@@ -1,0 +1,11 @@
+[Unit]
+Description=wifi-screen-control - Checking wifi AP %I for connected stations, controlling monitor on/off state.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/wifi-screen-control watch %i
+
+[Install]
+WantedBy=default.target
