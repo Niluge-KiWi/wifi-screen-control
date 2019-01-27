@@ -38,17 +38,27 @@ func SwitchMonitor(on bool) {
 func main() {
 	fmt.Printf("Checking wifi AP (device %v) for connected stations, controlling monitor on/off state.\n", Device)
 
-	// switch monitor on on exit
+	// first, make sure the monitor is on on exit
 	defer SwitchMonitor(true)
 
-	// Main loop
+	// properly exit on signals
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+
+	// Main loop
+	// but first: we don't know in which state the monitor is, let's force it
+	previousDevicePresent := IsThereAnyBodyOutThere()
+	SwitchMonitor(previousDevicePresent)
+
 	for {
 		fmt.Print("Just checking... ")
 		devicePresent := IsThereAnyBodyOutThere()
 		fmt.Printf("%v\n", devicePresent)
-		SwitchMonitor(devicePresent)
+
+		if devicePresent != previousDevicePresent {
+			SwitchMonitor(devicePresent)
+			previousDevicePresent = devicePresent
+		}
 
 		// loop or quit
 		select {
