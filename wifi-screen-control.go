@@ -9,11 +9,10 @@ import "os"
 import "os/signal"
 import "syscall"
 
-const Device = "wlp0s29f7u2"
 const PollingTime = 1 // in seconds
 
-func IsThereAnyBodyOutThere() bool {
-	out, err := exec.Command("iw", "dev", Device, "station", "dump").Output()
+func IsThereAnyBodyOutThere(device string) bool {
+	out, err := exec.Command("iw", "dev", device, "station", "dump").Output()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,7 +35,8 @@ func SwitchMonitor(on bool) {
 }
 
 func main() {
-	fmt.Printf("Checking wifi AP (device %v) for connected stations, controlling monitor on/off state.\n", Device)
+	device := os.Args[1]
+	fmt.Printf("Checking wifi AP (device %v) for connected stations, controlling monitor on/off state.\n", device)
 
 	// first, make sure the monitor is on on exit
 	defer SwitchMonitor(true)
@@ -47,12 +47,12 @@ func main() {
 
 	// Main loop
 	// but first: we don't know in which state the monitor is, let's force it
-	previousDevicePresent := IsThereAnyBodyOutThere()
+	previousDevicePresent := IsThereAnyBodyOutThere(device)
 	SwitchMonitor(previousDevicePresent)
 
 	for {
 		fmt.Print("Just checking... ")
-		devicePresent := IsThereAnyBodyOutThere()
+		devicePresent := IsThereAnyBodyOutThere(device)
 		fmt.Printf("%v\n", devicePresent)
 
 		if devicePresent != previousDevicePresent {
